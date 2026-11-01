@@ -1,0 +1,32 @@
+# Supplier scorecard definition.
+#
+# Every number the pipeline produces is driven from this file, so a reviewer can
+# change a weight or a band without touching code. This mirrors the lookup
+# tables of the spreadsheet model the pipeline replaces.
+#
+# For each feature, `bands` is a list of [threshold, points]. A supplier's value
+# earns the points of the highest threshold that is <= the value (the same rule
+# as an approximate-match VLOOKUP). The first threshold must be 0 because every
+# feature is non-negative. Points run 0..100 where 100 is best.
+
+min_orders: 5            # suppliers with fewer delivered orders are not scored
+
+features:
+  on_time_rate:          # share of orders delivered on or before the promised date
+    weight: 30
+    bands: [[0.00, 0], [0.50, 25], [0.70, 50], [0.85, 75], [0.95, 100]]
+  avg_delay_days:        # average days late, across late orders only
+    weight: 15
+    bands: [[0, 100], [1, 80], [3, 60], [7, 30], [14, 0]]
+  fill_rate:             # quantity received / quantity ordered
+    weight: 20
+    bands: [[0.00, 0], [0.80, 40], [0.90, 70], [0.97, 100]]
+  reject_rate:           # quantity rejected on inspection / quantity received
+    weight: 20
+    bands: [[0.00, 100], [0.01, 80], [0.03, 60], [0.06, 30], [0.10, 0]]
+  price_variance:        # |invoiced - expected| / expected, over all orders
+    weight: 15
+    bands: [[0.000, 100], [0.005, 80], [0.020, 50], [0.050, 20], [0.100, 0]]
+
+# Overall score (0..100, higher is better) to risk tier, same lookup rule.
+risk_tiers: [[0, Critical], [50, High], [65, Medium], [80, Low]]
